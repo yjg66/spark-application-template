@@ -53,6 +53,8 @@ object SampleApplication extends Logging {
     // Prints the result.
     println(s"# Lines: ${lines}")
 
+    // Tears down.
+    sc.stop()
     log.info("This Applicatino ends.")
   }
 }
