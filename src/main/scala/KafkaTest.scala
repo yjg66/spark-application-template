@@ -1,12 +1,18 @@
+
+import org.apache.spark.streaming.{StreamingContext, Seconds}
 import org.apache.spark.streaming.kafka.KafkaUtils
 import org.apache.spark.{SparkContext, SparkConf}
+
+import scala.collection.mutable
+import scala.collection.mutable.HashMap
 
 /**
  * Created by Administrator on 1/22/2015.
  */
 object KafkaTest {
   def main(args: Array[String]): Unit = {
-    testKafka()
+    //testKafka()
+    agg
   }
 
   def testKafka(): Unit = {
@@ -27,6 +33,85 @@ object KafkaTest {
     val wordCounts = words.map(x => (x, 1L))
       .reduceByKeyAndWindow(_ + _, _ - _, Minutes(10), Seconds(2), 2)
     wordCounts.print()
+    ssc.start()
+    ssc.awaitTermination()
+  }
+
+  def agg(): Unit ={
+    val conf = new SparkConf
+    val sc = new SparkContext(conf)
+    //val ssc = new StreamingContext(conf, Seconds(2))
+    //val ssc = new OLA2_StreamingContext(sc, null, Seconds(conf.get("ola.common.sparkstreaming_batch_seconds").toInt))
+    val timeDuration = Seconds(4)
+    import StreamingContext._
+    val Array(zkQuorum, group, topics, numThreads) = Array("10.190.172.43:2181", "test-consumer-group", "test", "1")
+    val topicMap = topics.split(",").map((_,numThreads.toInt)).toMap
+    val ssc =  new StreamingContext(sc, Seconds(2))
+    ssc.checkpoint("checkpoint")
+    val text = KafkaUtils.createStream(ssc, zkQuorum, group, topicMap).map(_._2)
+   // val text = ssc.textFileStream("hdfs://10.172.98.79:9000/StreamingSample_small700MB.txt")
+    //val text = ssc.OLA2_textFileStream("hdfs://10.172.98.79:9000/StreamingSample_small700MB.txt", 2, false, false)
+    text.map(record => {
+      // parse the data
+     // val s = record.split("\t")
+      val key = Seq(record, record.substring(0, 1))
+        //Seq(s(0), s(1))
+      val value = (System.currentTimeMillis() % 1000).toInt
+          //s(2).toInt
+      (key, value)
+    }).mapPartitions(iter => {
+      // map Side aggregate the results
+      // HashMap is Map(key -> Map(value, count))
+      val resultMap = new HashMap[Seq[String], HashMap[Int, Int]]
+      var tmp:(Seq[String], Int) = null
+      while(iter.hasNext) {
+        tmp = iter.next()
+        val valueMap = resultMap.getOrElse(tmp._1, new HashMap[Int, Int])
+        var count = valueMap.getOrElse(tmp._2, 0)
+        valueMap.put(tmp._2, count + 1)
+        resultMap.put(tmp._1, valueMap)
+      }
+      resultMap.iterator
+    }).reduceByKeyAndWindow((x: HashMap[Int, Int], y: HashMap[Int, Int]) => {
+      // reduce side aggregate the results
+      // combine the 2 HashMap
+      y.foreach(r => {
+        x.put(r._1, x.getOrElse(r._1, 0) + r._2)
+      })
+      x
+    } , timeDuration, timeDuration).mapPartitions(iter => {
+      // compute the percentage
+      // result Map(key, Map(percentage, value))
+      val resultMap = new mutable.HashMap[Seq[String], mutable.HashMap[Double, Int]]()
+      while(iter.hasNext) {
+        val tmp = iter.next
+        // compute the jump percentage key value
+        val map = tmp._2
+        val sumCount = map.map(r => r._2).reduce(_+_)
+        val p25 = sumCount * 0.25
+        val p50 = sumCount * 0.5
+        val p70 = sumCount * 0.75
+        val sortDataSeq = map.toSeq.sortBy(r => r._1)
+        val iterS = sortDataSeq.iterator
+        var curTmpSum = 0.0
+        var prevTmpSum = 0.0
+        val valueMap = new mutable.HashMap[Double, Int]()
+        while(iterS.hasNext) {
+          val tmpData = iterS.next()
+          prevTmpSum = curTmpSum
+          curTmpSum += tmpData._2
+          if(prevTmpSum <= p25 && curTmpSum >= p25) {
+            valueMap.put(0.25, tmpData._1)
+          } else if(prevTmpSum <= p50 && curTmpSum >= p50) {
+            valueMap.put(0.5, tmpData._1)
+          } else if(prevTmpSum <= p70 && curTmpSum >= p50) {
+            valueMap.put(0.75, tmpData._1)
+          }
+        }
+        resultMap.put(tmp._1, valueMap)
+      }
+      resultMap.iterator
+    }).print
     ssc.start()
     ssc.awaitTermination()
   }
