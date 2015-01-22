@@ -22,7 +22,7 @@ import org.apache.spark.{Logging, SparkContext, SparkConf}
 /**
  * This is a example of Apache Spark application.
  */
-object SampleApplication extends Logging {
+object SampleApplication {
 
   /**
    * This method is called as a Apache Spark application.
@@ -31,7 +31,7 @@ object SampleApplication extends Logging {
    * @param args an Array of String
    */
   def main(args: Array[String]) {
-    log.info("This Applicatino starts.")
+    //log.info("This Applicatino starts.")
 
     // Sets the input arguments.
     val master = args(0)
@@ -55,6 +55,6 @@ object SampleApplication extends Logging {
 
     // Tears down.
     sc.stop()
-    log.info("This Applicatino ends.")
+   // log.info("This Applicatino ends.")
   }
 }
