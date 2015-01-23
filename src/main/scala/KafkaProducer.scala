@@ -34,12 +34,17 @@ object KafkaProducer {
     val config = new ProducerConfig(props)
     val producer = new Producer[String, String](config)
 
-    // Send some messages
+    // Send some messagescd ..
     while(true) {
-      producer.send(data: _*)
-      data.foreach(r => {
-        println(r)
-      })
+//      producer.send(data: _*)
+//      data.foreach(r => {
+//        println(r)
+//      })
+      val data= (1 to messagesPerSec.toInt).map { messageNum =>
+        val str = (1 to 3).map(x => scala.util.Random.nextInt(10).toString)
+          .mkString("\t")
+        new KeyedMessage[String, String](topic, str)
+      }.toArray
       Thread.sleep(100)
     }
   }
