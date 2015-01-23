@@ -58,10 +58,11 @@ object KafkaTest {
     //val text = ssc.OLA2_textFileStream("hdfs://10.172.98.79:9000/StreamingSample_small700MB.txt", 2, false, false)
     val result = text.map(record => {
       // parse the data
-     // val s = record.split("\t")
-      val key = Seq(record, record.substring(0, 1))
+      val s = record.split("\t")
+      val key = Seq(s(0), s(1))
         //Seq(s(0), s(1))
-      val value = (System.currentTimeMillis() % 1000).toInt
+      val value = s(2).toInt
+          //(System.currentTimeMillis() % 1000).toInt
           //s(2).toInt
       (key, value)
     }).mapPartitions(iter => {
