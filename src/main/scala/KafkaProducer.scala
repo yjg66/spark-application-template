@@ -11,6 +11,7 @@ object KafkaProducer {
   def originProducer(args: Array[String]): Unit = {
     produceKafkaData(args)
   }
+
   def produceKafkaData(args: Array[String]): Unit = {
     if (args.length < 5) {
       System.err.println("Usage: KafkaWordCountProducer <metadataBrokerList> <topic> " +
@@ -27,17 +28,11 @@ object KafkaProducer {
     val props = new Properties()
     props.put("metadata.broker.list", brokers)
     props.put("serializer.class", "kafka.serializer.StringEncoder")
-
     val config = new ProducerConfig(props)
     val producer = new Producer[String, String](config)
 
     // Send some messages
     while(true) {
-//      val messages = (1 to messagesPerSec.toInt).map { messageNum =>
-//        val str = (1 to wordsPerMessage.toInt).map(x => scala.util.Random.nextInt(10).toString)
-//          .mkString(" ")
-//        new KeyedMessage[String, String](topic, str)
-//      }.toArray
       producer.send(data: _*)
       Thread.sleep(100)
     }
