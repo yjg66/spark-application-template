@@ -118,8 +118,8 @@ object KafkaTest {
       }
       resultMap.iterator
     })
-    //result.print
-    result.saveAsTextFiles(outPutHdfsPath)
+    result.print
+    //result.saveAsTextFiles(outPutHdfsPath)
     ssc.start()
     ssc.awaitTermination()
   }
