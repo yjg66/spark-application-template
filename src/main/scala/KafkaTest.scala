@@ -12,7 +12,7 @@ import scala.collection.mutable.HashMap
 object KafkaTest {
   def main(args: Array[String]): Unit = {
     //testKafka()
-    agg
+    agg(args)
   }
 
   def testKafka(): Unit = {
@@ -36,22 +36,27 @@ object KafkaTest {
     ssc.start()
     ssc.awaitTermination()
   }
-
-  def agg(): Unit ={
+  // run this use
+  // bin/spark-submit
+  // --class "KafkaTest"
+  // --master spark://10.190.172.43:7077
+  // /mnt/ssd/dm/kafka/spark-application-template/target/scala-2.10/benchmark-breeze-on-spark-assembly-0.0.1.jar
+  def agg(args: Array[String]): Unit ={
     val conf = new SparkConf
     val sc = new SparkContext(conf)
     //val ssc = new StreamingContext(conf, Seconds(2))
     //val ssc = new OLA2_StreamingContext(sc, null, Seconds(conf.get("ola.common.sparkstreaming_batch_seconds").toInt))
     val timeDuration = Seconds(4)
     import StreamingContext._
-    val Array(zkQuorum, group, topics, numThreads) = Array("10.190.172.43:2181", "test-consumer-group", "test", "1")
+    // Array("10.190.172.43:2181", "test-consumer-group", "test", "1")
+    val Array(zkQuorum, group, topics, numThreads, outPutHdfsPath) = Array(args(0), args(1), args(2), args(3), args(4))
     val topicMap = topics.split(",").map((_,numThreads.toInt)).toMap
     val ssc =  new StreamingContext(sc, Seconds(2))
     ssc.checkpoint("checkpoint")
     val text = KafkaUtils.createStream(ssc, zkQuorum, group, topicMap).map(_._2)
    // val text = ssc.textFileStream("hdfs://10.172.98.79:9000/StreamingSample_small700MB.txt")
     //val text = ssc.OLA2_textFileStream("hdfs://10.172.98.79:9000/StreamingSample_small700MB.txt", 2, false, false)
-    text.map(record => {
+    val result = text.map(record => {
       // parse the data
      // val s = record.split("\t")
       val key = Seq(record, record.substring(0, 1))
@@ -111,7 +116,9 @@ object KafkaTest {
         resultMap.put(tmp._1, valueMap)
       }
       resultMap.iterator
-    }).print
+    })
+    result.print
+    result.saveAsTextFiles(outPutHdfsPath)
     ssc.start()
     ssc.awaitTermination()
   }
