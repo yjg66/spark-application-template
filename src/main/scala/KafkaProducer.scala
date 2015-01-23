@@ -37,6 +37,9 @@ object KafkaProducer {
     // Send some messages
     while(true) {
       producer.send(data: _*)
+      data.foreach(r => {
+        println(r)
+      })
       Thread.sleep(100)
     }
   }
