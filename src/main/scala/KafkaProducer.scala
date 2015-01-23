@@ -8,6 +8,9 @@ import org.apache.spark.{SparkContext, SparkConf}
 import scala.collection.mutable.ArrayBuffer
 
 object KafkaProducer {
+  def main(args: Array[String]): Unit = {
+    produceKafkaData(args)
+  }
   def originProducer(args: Array[String]): Unit = {
     produceKafkaData(args)
   }
