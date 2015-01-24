@@ -77,10 +77,10 @@ object KafkaTest {
       println("[Kafka] record._2" + record._2)
       val s = record._2.split("\t")
       println("[kakfa] s " + s)
-//      val key = Seq(s(0), s(1))
-//      val value = s(2).toInt
-//      (key, value)
-     s
+      val key = Seq(s(0), s(1))
+      val value = s(2).toInt
+      (key, value)
+     //s
     })
 
 //     .mapPartitions(iter => {
