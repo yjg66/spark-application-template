@@ -73,7 +73,10 @@ object KafkaTest {
    // val text = ssc.textFileStream("hdfs://10.172.98.79:9000/StreamingSample_small700MB.txt")
     //val text = ssc.OLA2_textFileStream("hdfs://10.172.98.79:9000/StreamingSample_small700MB.txt", 2, false, false)
     val result = text.map(record => {
+      println("[Kafka] record" + record)
+      println("[Kafka] record._2" + record._2)
       val s = record._2.split("\t")
+      println("[kakf] s " + s)
       val key = Seq(s(0), s(1))
       val value = s(2).toInt
       (key, value)
