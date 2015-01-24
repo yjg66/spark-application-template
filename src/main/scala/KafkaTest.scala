@@ -75,7 +75,7 @@ object KafkaTest {
     val result = text.map(record => {
       println("[Kafka] record" + record)
       println("[Kafka] record._2" + record._2)
-      val s = record._2.split("\t")
+      val s = record._2.split(" ")
       println("[kakfa] s " + s(0))
       println("s split" + s(0).split("\t")(0))
       val key = Seq(s(0), s(1))
@@ -83,62 +83,61 @@ object KafkaTest {
       (key, value)
      //s
     })
-
-//     .mapPartitions(iter => {
-//      // map Side aggregate the results
-//      // HashMap is Map(key -> Map(value, count))
-//      val resultMap = new HashMap[Seq[String], HashMap[Int, Int]]
-//      var tmp:(Seq[String], Int) = null
-//      while(iter.hasNext) {
-//        tmp = iter.next()
-//        val valueMap = resultMap.getOrElse(tmp._1, new HashMap[Int, Int])
-//        var count = valueMap.getOrElse(tmp._2, 0)
-//        valueMap.put(tmp._2, count + 1)
-//        resultMap.put(tmp._1, valueMap)
-//      }
-//      resultMap.iterator
-//    }).reduceByKeyAndWindow((x: HashMap[Int, Int], y: HashMap[Int, Int]) => {
-//      // reduce side aggregate the results
-//      // combine the 2 HashMap
-//      y.foreach(r => {
-//        x.put(r._1, x.getOrElse(r._1, 0) + r._2)
-//      })
-//      x
-//    } , timeDuration, timeDuration).mapPartitions(iter => {
-//      // compute the percentage
-//      // result Map(key, Map(percentage, value))
-//      val resultMap = new mutable.HashMap[Seq[String], mutable.HashMap[Double, Int]]()
-//      while(iter.hasNext) {
-//        val tmp = iter.next
-//        // compute the jump percentage key value
-//        val map = tmp._2
-//        val sumCount = map.map(r => r._2).reduce(_+_)
-//        val p25 = sumCount * 0.25
-//        val p50 = sumCount * 0.5
-//        val p70 = sumCount * 0.75
-//        val sortDataSeq = map.toSeq.sortBy(r => r._1)
-//        val iterS = sortDataSeq.iterator
-//        var curTmpSum = 0.0
-//        var prevTmpSum = 0.0
-//        val valueMap = new mutable.HashMap[Double, Int]()
-//        while(iterS.hasNext) {
-//          val tmpData = iterS.next()
-//          prevTmpSum = curTmpSum
-//          curTmpSum += tmpData._2
-//          if(prevTmpSum <= p25 && curTmpSum >= p25) {
-//            valueMap.put(0.25, tmpData._1)
-//          } else if(prevTmpSum <= p50 && curTmpSum >= p50) {
-//            valueMap.put(0.5, tmpData._1)
-//          } else if(prevTmpSum <= p70 && curTmpSum >= p50) {
-//            valueMap.put(0.75, tmpData._1)
-//          }
-//        }
-//        resultMap.put(tmp._1, valueMap)
-//      }
-//      resultMap.iterator
-//    })
+     .mapPartitions(iter => {
+      // map Side aggregate the results
+      // HashMap is Map(key -> Map(value, count))
+      val resultMap = new HashMap[Seq[String], HashMap[Int, Int]]
+      var tmp:(Seq[String], Int) = null
+      while(iter.hasNext) {
+        tmp = iter.next()
+        val valueMap = resultMap.getOrElse(tmp._1, new HashMap[Int, Int])
+        var count = valueMap.getOrElse(tmp._2, 0)
+        valueMap.put(tmp._2, count + 1)
+        resultMap.put(tmp._1, valueMap)
+      }
+      resultMap.iterator
+    }).reduceByKeyAndWindow((x: HashMap[Int, Int], y: HashMap[Int, Int]) => {
+      // reduce side aggregate the results
+      // combine the 2 HashMap
+      y.foreach(r => {
+        x.put(r._1, x.getOrElse(r._1, 0) + r._2)
+      })
+      x
+    } , timeDuration, timeDuration).mapPartitions(iter => {
+      // compute the percentage
+      // result Map(key, Map(percentage, value))
+      val resultMap = new mutable.HashMap[Seq[String], mutable.HashMap[Double, Int]]()
+      while(iter.hasNext) {
+        val tmp = iter.next
+        // compute the jump percentage key value
+        val map = tmp._2
+        val sumCount = map.map(r => r._2).reduce(_+_)
+        val p25 = sumCount * 0.25
+        val p50 = sumCount * 0.5
+        val p70 = sumCount * 0.75
+        val sortDataSeq = map.toSeq.sortBy(r => r._1)
+        val iterS = sortDataSeq.iterator
+        var curTmpSum = 0.0
+        var prevTmpSum = 0.0
+        val valueMap = new mutable.HashMap[Double, Int]()
+        while(iterS.hasNext) {
+          val tmpData = iterS.next()
+          prevTmpSum = curTmpSum
+          curTmpSum += tmpData._2
+          if(prevTmpSum <= p25 && curTmpSum >= p25) {
+            valueMap.put(0.25, tmpData._1)
+          } else if(prevTmpSum <= p50 && curTmpSum >= p50) {
+            valueMap.put(0.5, tmpData._1)
+          } else if(prevTmpSum <= p70 && curTmpSum >= p50) {
+            valueMap.put(0.75, tmpData._1)
+          }
+        }
+        resultMap.put(tmp._1, valueMap)
+      }
+      resultMap.iterator
+    })
     result.print
-    //result.saveAsTextFiles(outPutHdfsPath)
+    result.saveAsTextFiles(outPutHdfsPath)
     ssc.start()
     ssc.awaitTermination()
   }
