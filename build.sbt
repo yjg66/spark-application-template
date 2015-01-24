@@ -41,6 +41,7 @@ seq(sbtprotobuf.ProtobufPlugin.protobufSettings: _*)
 libraryDependencies ++= Seq(
     "org.scalatest" %% "scalatest" % "1.9.1" % "test",
     "org.apache.spark" %% "spark-core" % "1.2.0",
+    "org.apache.hadoop" % "hadoop-client" % "1.2.0",
     "org.apache.spark" %% "spark-streaming" % "1.2.0",
     "org.apache.spark" %% "spark-core" % "1.2.0",
     "org.apache.spark" %% "spark-streaming" % "1.2.0",

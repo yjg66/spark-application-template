@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.spark.example
+//package org.apache.spark.example
 
 import org.apache.spark.{Logging, SparkContext, SparkConf}
 
@@ -48,7 +48,8 @@ object SampleApplication {
 
     // Executes this Spark application.
     val rdd = sc.textFile(inputFile)
-    val lines = rdd.count()
+    val lines = rdd.take(111)
+      //.count()
 
     // Prints the result.
     println(s"# Lines: ${lines}")
