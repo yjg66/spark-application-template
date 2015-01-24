@@ -76,7 +76,8 @@ object KafkaTest {
       println("[Kafka] record" + record)
       println("[Kafka] record._2" + record._2)
       val s = record._2.split("\t")
-      println("[kakfa] s " + s)
+      println("[kakfa] s " + s(0))
+      println("s split" + s(0).split("\t")(0))
       val key = Seq(s(0), s(1))
       val value = s(2).toInt
       (key, value)
