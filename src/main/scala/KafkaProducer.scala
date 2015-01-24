@@ -33,7 +33,6 @@ object KafkaProducer {
     props.put("serializer.class", "kafka.serializer.StringEncoder")
     val config = new ProducerConfig(props)
     val producer = new Producer[String, String](config)
-
     // Send some messagescd ..
     while(true) {
       producer.send(data: _*)
