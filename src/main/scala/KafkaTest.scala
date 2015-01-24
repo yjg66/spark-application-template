@@ -1,8 +1,9 @@
 
+import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.{StreamingContext, Seconds}
 import org.apache.spark.streaming.kafka.KafkaUtils
 import org.apache.spark.{SparkContext, SparkConf}
-
+import kafka.serializer.{Decoder, StringDecoder}
 import scala.collection.mutable
 import scala.collection.mutable.HashMap
 
@@ -13,8 +14,13 @@ object KafkaTest {
   def main(args: Array[String]): Unit = {
     //testKafka()
     agg(args)
+    //testWithArgs()
   }
 
+  def testWithArgs(): Unit ={
+    val args = Array("10.190.172.43:9092", "test", "3", "5", "hdfs://10.190.172.89:8020/yanjiedata/kafkaOutput/kafkaOuput1")
+    agg(args)
+  }
   def testKafka(): Unit = {
     val sparkConf = new SparkConf().setAppName("KafkaWordCount")
     val sc = new SparkContext(sparkConf)
@@ -43,27 +49,39 @@ object KafkaTest {
   // /mnt/ssd/dm/kafka/spark-application-template/target/scala-2.10/benchmark-breeze-on-spark-assembly-0.0.1.jar
   def agg(args: Array[String]): Unit ={
     val conf = new SparkConf
+//    conf.setMaster("spark://10.190.172.43:7077")
+//    conf.setAppName("kafka")
+    import java.io.FileInputStream;
+    import java.util.Properties;
+    val prop = new Properties()
     val sc = new SparkContext(conf)
     //val ssc = new StreamingContext(conf, Seconds(2))
     //val ssc = new OLA2_StreamingContext(sc, null, Seconds(conf.get("ola.common.sparkstreaming_batch_seconds").toInt))
     val timeDuration = Seconds(4)
     import StreamingContext._
     // Array("10.190.172.43:2181", "test-consumer-group", "test", "1")
-    val Array(zkQuorum, group, topics, numThreads, outPutHdfsPath) = Array(args(0), args(1), args(2), args(3), args(4))
+    val Array(zkQuorum, group, topics, numThreads, outPutHdfsPath, configFile) = Array(args(0), args(1), args(2), args(3), args(4), args(5))
+    prop.load(new FileInputStream(configFile))
+
     val topicMap = topics.split(",").map((_,numThreads.toInt)).toMap
+
     val ssc =  new StreamingContext(sc, Seconds(2))
     ssc.checkpoint("checkpoint")
-    val text = KafkaUtils.createStream(ssc, zkQuorum, group, topicMap).map(_._2)
+    val kafkaParams = Map[String, String](
+      "zookeeper.connect" -> zkQuorum, "group.id" -> group,
+      "zookeeper.connection.timeout.ms" -> prop.getProperty("zookeeper.connection.timeout.ms"))
+    val text = KafkaUtils.createStream[String, String, StringDecoder, StringDecoder](
+      ssc, kafkaParams, topicMap, StorageLevel.MEMORY_AND_DISK_SER_2)
+   // val text = KafkaUtils.createStream(ssc, zkQuorum, group, topicMap).map(_._2)
    // val text = ssc.textFileStream("hdfs://10.172.98.79:9000/StreamingSample_small700MB.txt")
     //val text = ssc.OLA2_textFileStream("hdfs://10.172.98.79:9000/StreamingSample_small700MB.txt", 2, false, false)
     val result = text.map(record => {
       // parse the data
       //val s = record.split("\t")
-      val key = Seq(record, record)
+      val key = Seq(record._2, record._2)
         //Seq(s(0), s(1))
       val value = (System.currentTimeMillis() % 1000).toInt
      //record(2).toInt
-
           //s(2).toInt
       (key, value)
     }).mapPartitions(iter => {
