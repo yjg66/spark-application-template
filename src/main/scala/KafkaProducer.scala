@@ -36,15 +36,6 @@ object KafkaProducer {
     // Send some messagescd ..
     while(true) {
       producer.send(data: _*)
-//      data.foreach(r => {
-//        println(r)
-//      })
-//      val messages = (1 to messagesPerSec.toInt).map { messageNum =>
-//        val str = (1 to 3).map(x => scala.util.Random.nextInt(10).toString)
-//          .mkString("\t")
-//        new KeyedMessage[String, String](topic, str)
-//      }.toArray
-      //producer.send(messages: _*)
       Thread.sleep(100)
     }
   }
